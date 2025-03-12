@@ -3,11 +3,9 @@
 @author: Yuhao Zhang
 last updated: 11/12/2024
 data from: Xinrong Tan
-data collected: 05/10/2023
 """
 
 import math
-import torch
 import neo
 import quantities as pq
 import matplotlib.pyplot as plt
@@ -27,11 +25,13 @@ from mpl_toolkits.mplot3d import Axes3D
 import numba
 np.set_printoptions(threshold=np.inf)
 
+# ------- NEED CHANGE -------
 ### path
 mice = '20230511'
 main_path = r'E:\xinrong\mice_1\20230511\cage1-2-R-2_g0\cage1-2-R-2_g0_imec0'
 save_path = r'C:\Users\zyh20\Desktop\Perturbation_analysis\manifold_perturbation\20230511'
 
+# ------- NO NEED CHANGE -------
 ### marker
 events = pd.read_csv(main_path+'/event_series.csv',index_col=0)
 print(events)
