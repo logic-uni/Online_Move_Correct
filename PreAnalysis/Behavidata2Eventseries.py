@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 resample_rate = 1059.321823
 
-main_path = r'E:\xinrong\mice_2\20230514\cage1-1-R-1_g0\cage1-1-R-1_g0_imec0'
+main_path = '/data1/zhangyuhao/xinrong_data/NP1/mice_3/20230522/cage1-3-L-2_g0'
 marker_path = main_path+'/resample_behavioral_data.csv'
 save_path = main_path+'/event_series.csv'
 
