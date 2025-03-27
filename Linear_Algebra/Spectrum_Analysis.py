@@ -32,10 +32,11 @@ from mpl_toolkits.mplot3d import Axes3D
 np.set_printoptions(threshold=np.inf)
 
 # ------- NEED CHANGE -------
-mice = 'mice_2'  # 10-13 mice_1, 14-17 mice_2, 18-22 mice_3
-session_name = '20230514'
+mice = 'mice_1'  # 10-13 mice_1, 14-17 mice_2, 18-22 mice_3
+session_name = '20230510'
 region = 'Lobules IV-V'   #Simple lobule  Lobule III  Lobules IV-V  Interposed nucleus  
 eigv_condi = 'eigv_big1' # eigv_big1, eigv_0to1, eigv_big0
+avoid_spikemore1 = True # 避免1ms的bin里有多个spike,对于1ms内多个spike的，强行置1
 
 # ------- NO NEED CHANGE -------
 ### path
@@ -77,7 +78,12 @@ def popu_fr_onetrial(neuron_ids,marker_start,marker_end,fr_bin):
         spike_times_trail = spike_times[(spike_times > marker_start) & (spike_times < marker_end)]
         spiketrain = neo.SpikeTrain(spike_times_trail,units='sec',t_start=marker_start, t_stop=marker_end)
         fr = BinnedSpikeTrain(spiketrain, bin_size=fr_bin*pq.ms,tolerance=None)
-        one_neruon = fr.to_array().astype(int)[0]
+        if avoid_spikemore1 == False:
+            one_neruon = fr.to_array().astype(int)[0]
+        else:
+            fr_binar = fr.binarize()  # 对于可能在1ms内出现两个spike的情况，强制置为该bin下即1ms只能有一个spike
+            one_neruon = fr_binar.to_array().astype(int)[0]
+        
         #print(one_neruon)
         if j == 0:
             neurons = one_neruon
@@ -437,10 +443,10 @@ def main():
             evalues_list.append(evalues_trial)
             evectors_list.append(evectors_trial)
             mags_list.append(mags_trial)
-            '''
+            
             # eigen value spectrum
             eigen_value_spectrum(evalue1,evalue2,evalue3,evalue4,num,time_interval) 
-            
+            '''
             # compare eigen vector in different stage, filter those eigenvalue=0, stack trials different stage emerging eigen vector
             filt_evc1 = filter_eva0(evalue1, evector1)
             filt_evc2 = filter_eva0(evalue2, evector2)
@@ -450,14 +456,14 @@ def main():
             if not np.all(s2_diff == 0): s2_diff_list.append(s2_diff)
             if not np.all(s3_diff == 0): s3_diff_list.append(s3_diff)
             if not np.all(s4_diff == 0): s4_diff_list.append(s4_diff)
-            '''
+            
             # For those eigen value norm >= 1 in stage 3, collecting them
             norm_biger1 = stout_eva2evc(mag1,evector1,eigv_condi)  
             print(norm_biger1.shape)
             stan_out_eigvc_list.append(norm_biger1)
-            
+            '''
             num = num + 1
-
+    '''
     evalues = np.array(evalues_list)    # 形状 (num_trials, 4, K)
     evectors = np.array(evectors_list)  # 同上
     mags = np.array(mags_list)          # 形状 (num_trials, 4)
@@ -470,7 +476,7 @@ def main():
     np.save(save_path + f"/{region}_{eigv_condi}_eigvc.npy", stan_out_eigvc)
     if stan_out_eigvc.shape[0] > 2: 
         plot_matrix_sim_diff(stan_out_eigvc,eigv_condi)  
-    '''
+    
     s2_diff_np = np.vstack(s2_diff_list)
     s3_diff_np = np.vstack(s3_diff_list)
     s4_diff_np = np.vstack(s4_diff_list)
