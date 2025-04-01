@@ -72,7 +72,7 @@ def singleneuron_spiketrain(id):
         spike_times[i]=times[z]/sample_rate
     return spike_times
 
-def popu_fr_onetrial(neuron_ids,marker_start,marker_end,fr_bin):
+def popu_fr_onetrial(neuron_ids,marker_start,marker_end,fr_bin):  ## marker_start,marker_end单位是s
     for j in range(len(neuron_ids)): #第j个neuron
         spike_times = singleneuron_spiketrain(neuron_ids[j])
         spike_times_trail = spike_times[(spike_times > marker_start) & (spike_times < marker_end)]
@@ -411,7 +411,7 @@ def main():
     time_interval = neuron_num  #单位ms
     print(f'each truncated time length: {time_interval} ms')
     # pertur前后各两个方阵
-    two_seg_bin_num = time_interval*2*fr_bin/1000  
+    two_seg_bin_num = time_interval*2*fr_bin/1000  #转换为s
     num = 1
     evalues_list, evectors_list, mags_list = [], [], []
     stan_out_eigvc_list, s2_diff_list, s3_diff_list, s4_diff_list = [], [], [], []
@@ -419,14 +419,14 @@ def main():
     for i in np.arange(0,len(events['push_on'])-1):
         # -- marker --
         #trail_start = events['push_on'].iloc[i]   trial_end = events['push_off'].iloc[i]
-        pert_start = events['pert_on'].iloc[i]
-        pert_end = events['pert_off'].iloc[i]
-        reward_on = events['reward_on'].iloc[i]
+        pert_start = events['pert_on'].iloc[i]  #单位s
+        pert_end = events['pert_off'].iloc[i]   #单位s
+        reward_on = events['reward_on'].iloc[i] #单位s
         # pert_start != 0 means there's perturbation in this trial
         # reward_on != 0 means there's a success pushing trial
-        if pert_start != 0 and reward_on != 0 and pert_end-pert_start > 0.14 and pert_end-pert_start < 0.16:
+        if pert_start != 0 and reward_on != 0 and pert_end-pert_start > 0.14 and pert_end-pert_start < 0.16:   # beacuse perturbation length is 0.14s~0.16s randomly
             # -- truncate data --
-            data = popu_fr_onetrial(popu_id,pert_start-two_seg_bin_num,pert_start+two_seg_bin_num+0.0006,fr_bin)  # pert 前0.218s 后0.218s
+            data = popu_fr_onetrial(popu_id,pert_start-two_seg_bin_num,pert_start+two_seg_bin_num+0.0006,fr_bin)  ## pert_start-two_seg_bin_num,pert_start+two_seg_bin_num+0.0006单位是s
             print(f"neuron_fr_mat: {data.shape}")
             # -- compute each stage eigen vector and vector --
             evalue1, evector1, mag1 = eigen(data[:,0:time_interval])  # each evalue is a complex number
