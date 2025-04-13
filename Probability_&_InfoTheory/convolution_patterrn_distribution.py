@@ -37,7 +37,6 @@ for i in range((len(b)-len(a))):
 
 a=a[::-1]
 
-
 x1=[i for i in range(0, len(a), 1)]
 plt.bar(x1, a)
 plt.show()
