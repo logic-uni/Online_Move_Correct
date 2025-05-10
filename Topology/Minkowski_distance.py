@@ -50,7 +50,7 @@ print(events['trial_start'].iloc[-1])
 print(cluster_info)
 
 # get single neuron spike train
-def singleneuron_spiketrain(id):
+def singleneuron_spiketimes(id):
     x = np.where(identities == id)
     y=x[0]
     #y = np.where(np.isin(identities, id))[0]
@@ -62,7 +62,7 @@ def singleneuron_spiketrain(id):
 
 def popu_fr_onetrial(neuron_ids,marker_start,marker_end,fr_bin):   #开始推杆，到推杆结束的一个trial的population spike counts
     for j in range(len(neuron_ids)): #第j个neuron
-        spike_times = singleneuron_spiketrain(neuron_ids[j])
+        spike_times = singleneuron_spiketimes(neuron_ids[j])
         spike_times_trail = spike_times[(spike_times > marker_start) & (spike_times < marker_end)]
         spiketrain = neo.SpikeTrain(spike_times_trail,units='sec',t_start=marker_start, t_stop=marker_end)
         fr = BinnedSpikeTrain(spiketrain, bin_size=fr_bin*pq.ms,tolerance=None)

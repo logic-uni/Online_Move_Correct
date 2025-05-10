@@ -51,7 +51,7 @@ print(events['trial_start'].iloc[-1])
 print(cluster_info)
 
 # get single neuron spike train
-def singleneuron_spiketrain(id):
+def singleneuron_spiketimes(id):
     x = np.where(identities == id)
     y=x[0]
     #y = np.where(np.isin(identities, id))[0]
@@ -77,7 +77,7 @@ def neuron_fr_trials(neuron_id,fr_bin,mode):   #开始推杆，到推杆结束�
         # select success trials
         if pert_on != 0 and reward_on != 0 and pert_off > pert_on:
             # total
-            spike_times = singleneuron_spiketrain(neuron_id)
+            spike_times = singleneuron_spiketimes(neuron_id)
             # trancation
             if mode == 'reset':
                 ## during reset

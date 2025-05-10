@@ -49,7 +49,7 @@ print(cluster_info)
 # ------- spike counts -------
 
 # get single neuron spike train
-def singleneuron_spiketrain(id):
+def singleneuron_spiketimes(id):
     x = np.where(identities == id)
     y=x[0]
     #y = np.where(np.isin(identities, id))[0]
@@ -132,7 +132,7 @@ def has_shift_similarity(S, T, epsilon=0.0):
 def popu_sptime_trial(neuron_ids,start,end):  # marker_start,marker_end单位是s
     popu_sptime = []
     for j in range(len(neuron_ids)): #第j个neuron
-        spike_times = singleneuron_spiketrain(neuron_ids[j])
+        spike_times = singleneuron_spiketimes(neuron_ids[j])
         spike_times_trail = spike_times[(spike_times > start) & (spike_times < end)]
         if len(spike_times_trail) > 2:
             align_nu_times = spike_times_trail - start
@@ -316,7 +316,7 @@ def neuron_trials_tempora():
                 # -- truncate data --
                 t1 = pert_start + trunc_interval * mode / 1000  #单位s
                 t2 = t1 + trunc_interval / 1000  #单位s
-                spike_times = singleneuron_spiketrain(popu_id[j])
+                spike_times = singleneuron_spiketimes(popu_id[j])
                 spike_times_trail = spike_times[(spike_times > t1) & (spike_times < t2)]
                 if len(spike_times_trail) > 2:
                     align_nu_times = spike_times_trail - t1

@@ -52,7 +52,7 @@ print(cluster_info)
 
 # ------- spike counts -------
 # get single neuron spike train
-def singleneuron_spiketrain(id):
+def singleneuron_spiketimes(id):
     x = np.where(identities == id)
     y=x[0]
     #y = np.where(np.isin(identities, id))[0]
@@ -64,7 +64,7 @@ def singleneuron_spiketrain(id):
 
 def popu_fr_onetrial(neuron_ids,marker_start,marker_end,fr_bin):  ## marker_start,marker_end单位是s
     for j in range(len(neuron_ids)): #第j个neuron
-        spike_times = singleneuron_spiketrain(neuron_ids[j])
+        spike_times = singleneuron_spiketimes(neuron_ids[j])
         spike_times_trail = spike_times[(spike_times > marker_start) & (spike_times < marker_end)]
         spiketrain = neo.SpikeTrain(spike_times_trail,units='sec',t_start=marker_start, t_stop=marker_end)
         fr = BinnedSpikeTrain(spiketrain, bin_size=fr_bin*pq.ms,tolerance=None)
@@ -82,7 +82,7 @@ def popu_fr_onetrial(neuron_ids,marker_start,marker_end,fr_bin):  ## marker_star
     return neurons
 
 # ------- SVD analysis -------
-def Plot_svd_spec(singular_values, num, time_interval):
+def Plot_svd_spec(S, num, time_interval):
     plt.figure(figsize=(8, 5))
     plt.plot(S, marker='o', linestyle='-', color='b')
     plt.title('Singular Values from SVD')
@@ -93,26 +93,10 @@ def Plot_svd_spec(singular_values, num, time_interval):
     plt.savefig(save_path+f"/{region}_trial_{num}.png",dpi=600,bbox_inches = 'tight')
     plt.clf()
 
-def SVD_matrix_spectrum(data):
-    # 1. 进行奇异值分解
+def SVD_analysis(data):
     U, S, Vt = np.linalg.svd(data)
-
-    # 3. 计算最大奇异值对应的特征向量
-    max_singular_value_index = np.argmax(S)
-    max_singular_value_vector = U[:, max_singular_value_index]
-
-    # 输出最大奇异值及其对应的特征向量
-    print(f'Max Singular Value: {S[max_singular_value_index]}')
-    print(f'Corresponding Feature Vector (Left Singular Vector): {max_singular_value_vector}')
-    return 
-
-def save_svd():
-    evalues = np.array(evalues_list)    # 形状 (num_trials, 4, K)
-    evectors = np.array(evectors_list)  # 同上 (num_trials, 4, K, K)
-    mags = np.array(mags_list)          # 形状 (num_trials, 4)
-    np.save(save_path + f"/{region}_evalues.npy", evalues)
-    np.save(save_path + f"/{region}_evectors.npy", evectors)
-    np.save(save_path + f"/{region}_mags.npy", mags)
+    #Plot_svd_spec(S, num, time_interval)
+    return U, S, Vt
 
 # ------- Eigen analysis -------
 def eigen_comput(data):
@@ -162,26 +146,16 @@ def eigen_analysis(data, num, time_interval):
     evalue4, evector4, mag4 = eigen_comput(data[:,time_interval*3:time_interval*4])
     #  -- concatenate --
     evectors_trial = np.array([evector1, evector2, evector3, evector4], dtype=np.complex64)
-    #evalues_trial = np.array([evalue1, evalue2, evalue3, evalue4], dtype=np.complex64)
-    #mags_trial = np.array([mag1, mag2, mag3, mag4], dtype=np.float32)
-    evectors_list.append(evectors_trial)
-    #evalues_list.append(evalues_trial)
-    #mags_list.append(mags_trial)
+    evalues_trial = np.array([evalue1, evalue2, evalue3, evalue4], dtype=np.complex64)
+    mags_trial = np.array([mag1, mag2, mag3, mag4], dtype=np.float32)
     # -- plot --
     #Plot_eigenvalue_spec(evalue1,evalue2,evalue3,evalue4,num,time_interval) 
     # -- filter those eigenvalue=0 --
     filt_evc1, filt_evc2, filt_evc3, filt_evc4 = filter_eva0(evalue1, evector1), filter_eva0(evalue2, evector2), filter_eva0(evalue3, evector3), filter_eva0(evalue4, evector4)
-
-def save_eigen():
-    evalues = np.array(evalues_list)    # 形状 (num_trials, 4, K)
-    evectors = np.array(evectors_list)  # 同上 (num_trials, 4, K, K)
-    mags = np.array(mags_list)          # 形状 (num_trials, 4)
-    np.save(save_path + f"/{region}_evalues.npy", evalues)
-    np.save(save_path + f"/{region}_evectors.npy", evectors)
-    np.save(save_path + f"/{region}_mags.npy", mags)
+    return
 
 # ------- CovarMat analysis -------
-def covmatr_spectrum(data):
+def cov_analysis(data):
     ## covarience matrix是对称阵，所以只有实数值的特征值
     ATA = np.dot(data.T, data)
     # 对 A^T A 进行特征值分解
@@ -200,13 +174,11 @@ def covmatr_spectrum(data):
     max_eigenvector = eigenvectors[:, max_index]  # 对应的特征向量
     return max_eigenvector
 
-def save_cov():
-    evalues = np.array(evalues_list)    # 形状 (num_trials, 4, K)
-    evectors = np.array(evectors_list)  # 同上 (num_trials, 4, K, K)
-    mags = np.array(mags_list)          # 形状 (num_trials, 4)
-    np.save(save_path + f"/{region}_evalues.npy", evalues)
-    np.save(save_path + f"/{region}_evectors.npy", evectors)
-    np.save(save_path + f"/{region}_mags.npy", mags)
+def save(values, vectors, type, region):
+    evalues = np.array(values)   
+    evectors = np.array(vectors)        
+    np.save(save_path + f"/{region}_{type}values.npy", evalues)
+    np.save(save_path + f"/{region}_{type}vectors.npy", evectors)
 
 # ------- Main Function -------
 def main():
@@ -220,32 +192,36 @@ def main():
     neurons = cluster_info[cluster_info['ch'].isin(site_id)]
     popu_id = np.array(neurons['cluster_id']).astype(int)
     neuron_num = len(popu_id)
-    time_interval = neuron_num  #单位ms
-    print(f'each truncated time length: {time_interval} ms')
-    # pertur前后各两个方阵
-    two_seg_bin_num = time_interval*2*fr_bin/1000  #转换为s
     num = 1
-    evalues_list, evectors_list, mags_list = [], [], []
-    # -- enumarate trials --
-    for i in np.arange(0,len(events['push_on'])-1):
-        # -- marker --
-        pert_start, pert_end, reward_on = events['pert_on'].iloc[i], events['pert_off'].iloc[i], events['reward_on'].iloc[i] # unit s
+    # initialize saving list
+    Evalues_list, Evectors_list = [], []
+    Singvalues_list, Singvectors_list = [], []
+    CovEvalues_list, CovEvectors_list = [], []
+    for i in np.arange(0,len(events['push_on'])-1):  # enumarate trials
+        pert_start, pert_end, reward_on = events['pert_on'].iloc[i], events['pert_off'].iloc[i], events['reward_on'].iloc[i] # load marker unit s
         if pert_start != 0 and reward_on != 0 and pert_end-pert_start > 0.14 and pert_end-pert_start < 0.16:   # pert_start != 0 means there's perturbation, reward_on != 0 means this is a success pushing trial, perturbation length is 0.14s~0.16s randomly
-            # Option 1: eigen analysis
-            data = popu_fr_onetrial(popu_id,pert_start-two_seg_bin_num,pert_start+two_seg_bin_num+0.0006,fr_bin)  # 滑动截断得到方阵 pert_start-two_seg_bin_num,pert_start+two_seg_bin_num+0.0006单位是s
-            print(f"neuron_fr_mat: {data.shape}")
-            eigen_analysis(data, num, time_interval) 
-            # Option 2：SVD analysis
-            #SVD_matrix_spectrum(data[:,(pert_s):(pert_s+40)])
-            # Option 3：Cov analysis
-            #covmatr_spectrum(data[:,(pert_s-40):(pert_s)])
-            num = num + 1
-    
-    #save_eigen()
-    save_svd()
-    #save_cov()
+            # eigen analysis
+            time_interval = neuron_num  #单位ms
+            two_seg_bin_num = time_interval*2*fr_bin/1000  # pertur前后各两个方阵 #转换为s
+            trunc1 = popu_fr_onetrial(popu_id,pert_start-two_seg_bin_num,pert_start+two_seg_bin_num+0.0006,fr_bin)  # 滑动截断得到方阵 pert_start-two_seg_bin_num,pert_start+two_seg_bin_num+0.0006单位是s
+            evectors_trial, evalues_trial= eigen_analysis(trunc1, num, time_interval)
+            Evectors_list.append(evectors_trial)
+            Evalues_list.append(evalues_trial)
+            # SVD analysis
+            trunc2 = popu_fr_onetrial(popu_id,pert_start-two_seg_bin_num,pert_start+two_seg_bin_num+0.0006,fr_bin)
+            Singvectors_trial, Singvalues_trial = SVD_analysis(trunc2, num)
+            Singvectors_list.append(Singvectors_trial)
+            Singvalues_list.append(Singvalues_trial)
+            # Cov analysis
+            trunc3 = popu_fr_onetrial(popu_id,pert_start-two_seg_bin_num,pert_start+two_seg_bin_num+0.0006,fr_bin)
+            CovEvectors_trial, CovEvalues_trial = cov_analysis(trunc3, num)
+            CovEvectors_list.append(CovEvectors_trial)
+            CovEvalues_list.append(CovEvalues_trial)
+
+            num += 1
+
+    save(Evalues_list, Evectors_list, 'eigen', region)
+    save(Singvalues_list, Singvectors_list, 'sing', region)
+    save(CovEvalues_list, CovEvectors_list, 'cov', region)
 
 main()
-
-
-#data = popu_fr_onetrial(neuron_id,pert_start,pert_end+0.001,fr_bin)

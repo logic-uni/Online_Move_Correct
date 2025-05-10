@@ -46,7 +46,7 @@ print(events['trial_start'].iloc[-1])
 print(cluster_info)
 
 # get single neuron spike train
-def singleneuron_spiketrain(id):
+def singleneuron_spiketimes(id):
     x = np.where(identities == id)
     y=x[0]
     spike_times=np.empty(len(y))
@@ -191,7 +191,7 @@ def main():
     neuron_colors = plt.cm.hsv(np.linspace(0, 1, len(popu_id)))
     plt.figure(figsize=(10, 6))
     for i in range(len(popu_id)):
-        spike_times = singleneuron_spiketrain(popu_id[i])
+        spike_times = singleneuron_spiketimes(popu_id[i])
         #color = neuron_colors[i]
         neuron_intervals = ISI(spike_times,popu_id[i])
         popu_intervals.extend(neuron_intervals)
