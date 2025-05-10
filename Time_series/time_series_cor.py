@@ -40,10 +40,6 @@ times = np.load(sorted_path+'/spike_times.npy')  #
 ch = pd.read_csv(sorted_path + '/neuropixels_site_area.csv')
 cluster_info = pd.read_csv(sorted_path+'/cluster_info.tsv', sep='\t')
 print(ch)
-print("电生理总时长")
-print((times[-1]/sample_rate)[0])
-print("行为总时长")
-print(events['trial_start'].iloc[-1])
 print(cluster_info)
 
 # ------- spike counts -------

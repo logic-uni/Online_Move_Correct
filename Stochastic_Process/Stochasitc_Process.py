@@ -44,10 +44,6 @@ times = np.load(main_path+'/spike_times.npy')
 ch = pd.read_csv(main_path+'/neuropixels_site_area.csv')#防止弹出警告
 cluster_info = pd.read_csv(main_path+'/cluster_info.tsv', sep='\t')#防止弹出警告
 print(ch)
-print("电生理总时长")
-print((times[-1]/sample_rate)[0])
-print("行为总时长")
-print(events['trial_start'].iloc[-1])
 print(cluster_info)
 
 # get single neuron spike train

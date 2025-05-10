@@ -15,7 +15,7 @@ np.seterr(divide='ignore',invalid='ignore')
 
 # ------- NEED CHANGE -------
 mice = 'mice_1'  # 10-13 mice_1, 14-17 mice_2, 18-22 mice_3
-session_name = '20230511'
+session_name = '20230510'
 region = 'Lobules IV-V'   #Simple lobule  Lobule III  Lobules IV-V  Interposed nucleus
 mode = -1  # mode 0 after per 0~100ms,mode 1 after per 100~200ms,mode -1 before per -100~0ms,
 trunc_interval = 100  #单位ms  每个neuron在20ms/50ms的截断下即使是所有trial也无法得到显著统计
@@ -39,10 +39,6 @@ times = np.load(sorted_path+'/spike_times.npy')  #
 ch = pd.read_csv(sorted_path + '/neuropixels_site_area.csv')
 cluster_info = pd.read_csv(sorted_path+'/cluster_info.tsv', sep='\t')
 print(ch)
-print("电生理总时长")
-print((times[-1]/sample_rate)[0])
-print("行为总时长")
-print(events['trial_start'].iloc[-1])
 print(cluster_info)
 
 # get single neuron spike train
