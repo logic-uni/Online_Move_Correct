@@ -4,7 +4,6 @@
 last updated: 05/10/2025
 data from: Xinrong Tan
 """
-
 import neo
 import quantities as pq
 import matplotlib.pyplot as plt
@@ -12,14 +11,10 @@ import numpy as np
 import pandas as pd
 from matplotlib.pyplot import *
 from ast import literal_eval
-from sklearn.decomposition import PCA
 from elephant.conversion import BinnedSpikeTrain
 import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.preprocessing import StandardScaler
 from sklearn.metrics.pairwise import euclidean_distances, cosine_similarity
 from sklearn.metrics.pairwise import cosine_similarity
-from matplotlib import cm
 np.set_printoptions(threshold=np.inf)
 
 # ------- NEED CHANGE -------
@@ -44,7 +39,7 @@ cluster_info = pd.read_csv(sorted_path+'/cluster_info.tsv', sep='\t')
 print(ch)
 print(cluster_info)
 
-# ------- spike counts -------
+# ------- spike train -------
 # get single neuron spike train
 def singleneuron_spiketimes(id):
     x = np.where(identities == id)
@@ -74,39 +69,6 @@ def popu_fr_onetrial(neuron_ids,marker_start,marker_end,fr_bin):  ## marker_star
         else:
             neurons = np.vstack((neurons, one_neruon))
     return neurons
-
-# ------- SVD analysis -------
-def Plot_svd_spec(S, num, time_interval):
-    plt.figure(figsize=(8, 5))
-    plt.plot(S, marker='o', linestyle='-', color='b')
-    plt.title('Singular Values from SVD')
-    plt.xlabel('Index')
-    plt.ylabel('Singular Value')
-    plt.grid(True)
-    plt.show()
-    plt.savefig(save_path+f"/{region}_trial_{num}.png",dpi=600,bbox_inches = 'tight')
-    plt.clf()
-    
-def SVD_comput(truncdata):
-    U, S, Vt = np.linalg.svd(truncdata)  # 加上full_matrices=False 仅保留非零奇异值对应的向量
-    return U, S, Vt
-
-def SVD_analysis(data, num, time_interval=20):
-    n_samples, n_features = data.shape
-    print(n_features)
-    num_segments = n_features // time_interval  # 计算分段数量
-    results = []
-    for i in range(num_segments):
-        # 截取当前时间段的列数据
-        start = i * time_interval
-        end = (i+1) * time_interval
-        truncdata = data[:, start:end]
-        # 计算当前分块的SVD
-        U, S, Vt = SVD_comput(truncdata)
-        # 将结果打包为元组并保存
-        results.append( (U, S, Vt) )
-
-    return results
 
 # ------- Eigen analysis -------
 def eigen_comput(data):
@@ -174,34 +136,25 @@ def main():
     site_id = ch[ch['area_name'] == region].iloc[0]['area_site']
     neurons = cluster_info[cluster_info['ch'].isin(site_id)]
     popu_id = np.array(neurons['cluster_id']).astype(int)
+    num_neurons = len(popu_id)
     # Parameters for truncated square matrix
-    time_interval = len(popu_id)  #单位ms
+    time_interval = num_neurons  #单位ms
     two_seg_bin_num = time_interval*2*fr_bin/1000  # pertur前后各两个方阵 #转换为s
-
-    num = 1
     # initialize saving list
-    #Evalues_list, Evectors_list = [], []
-    svd_results = []
+    num = 1
+    Evalues_list, Evectors_list = [], []
     for i in np.arange(0,len(events['push_on'])-1):  # enumarate trials
         pert_start, pert_end, reward_on = events['pert_on'].iloc[i], events['pert_off'].iloc[i], events['reward_on'].iloc[i] # load marker unit s
         if pert_start != 0 and reward_on != 0 and pert_end-pert_start > 0.14 and pert_end-pert_start < 0.16:   # pert_start != 0 means there's perturbation, reward_on != 0 means this is a success pushing trial, perturbation length is 0.14s~0.16s randomly
             # eigen analysis
-            '''
             trunc1 = popu_fr_onetrial(popu_id,pert_start-two_seg_bin_num,pert_start+two_seg_bin_num+0.0006,fr_bin)  # 滑动截断得到方阵 pert_start-two_seg_bin_num,pert_start+two_seg_bin_num+0.0006单位是s
             evectors_trial, evalues_trial= eigen_analysis(trunc1, num, time_interval)
             Evectors_list.append(evectors_trial)
             Evalues_list.append(evalues_trial)
-            '''
-            # SVD analysis
-            trunc2 = popu_fr_onetrial(popu_id,pert_start-0.1,pert_start+0.2+0.0006,fr_bin)  #单位是s  perturbation为零点，截取-100ms到200ms
-            svd_reslut_trial = SVD_analysis(trunc2, num)
-            svd_results.append(svd_reslut_trial)
-
             num += 1
-
-    #evalues, evectors = np.array(Evalues_list), np.array(Evectors_list)  
-    #np.save(save_path + f"/{region}_evalues.npy", evalues)
-    #np.save(save_path + f"/{region}_evectors.npy", evectors)
-    np.save(save_path + f"/{region}_svdresults.npy", svd_results)
+    
+    evalues, evectors = np.array(Evalues_list), np.array(Evectors_list)  
+    np.save(save_path + f"/{region}_evalues.npy", evalues)
+    np.save(save_path + f"/{region}_evectors.npy", evectors)
 
 main()
