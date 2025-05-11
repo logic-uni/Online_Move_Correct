@@ -19,8 +19,8 @@ np.set_printoptions(threshold=np.inf)
 
 # ------- NEED CHANGE -------
 mice = 'mice_1'  # 10-13 mice_1, 14-17 mice_2, 18-22 mice_3
-session_name = '20230512'
-region = 'Lobules IV-V'   #Simple lobule  Lobule III  Lobules IV-V  Interposed nucleus  
+session_name = '20230510'
+region = 'Interposed nucleus'   #Simple lobule  Lobule III  Lobules IV-V  Interposed nucleus  
 avoid_spikemore1 = True # 避免1ms的bin里有多个spike,对于1ms内多个spike的，强行置1
 
 # ------- NO NEED CHANGE -------
@@ -39,7 +39,6 @@ cluster_info = pd.read_csv(sorted_path+'/cluster_info.tsv', sep='\t')
 print(ch)
 print(cluster_info)
 
-# ------- spike train -------
 # get single neuron spike train
 def singleneuron_spiketimes(id):
     x = np.where(identities == id)
@@ -70,7 +69,6 @@ def popu_fr_onetrial(neuron_ids,marker_start,marker_end,fr_bin):  ## marker_star
             neurons = np.vstack((neurons, one_neruon))
     return neurons
 
-# ------- SVD analysis -------
 def Plot_svd_spec(S, num, time_interval):
     plt.figure(figsize=(8, 5))
     plt.plot(S, marker='o', linestyle='-', color='b')
@@ -86,6 +84,7 @@ def Plot_svd_spec(S, num, time_interval):
 def main():
     fr_bin = 1
     plt.figure(figsize=(10, 10))
+
     # select region neurons
     ch['area_site'] = ch['area_site'].apply(literal_eval)
     if region not in ch['area_name'].values:
@@ -95,38 +94,38 @@ def main():
     neurons = cluster_info[cluster_info['ch'].isin(site_id)]
     popu_id = np.array(neurons['cluster_id']).astype(int)
     num_neurons = len(popu_id)
-    # Parameters for token matrix
+
+    # get each trial truncated data
     num_trials = 0
-    for i in np.arange(0,len(events['push_on'])-1):  # compute successful num_trials
-        pert_start, pert_end, reward_on = events['pert_on'].iloc[i], events['pert_off'].iloc[i], events['reward_on'].iloc[i] # load marker unit s
+    trunc_data_trials = []
+    for trial in np.arange(0,len(events['push_on'])-1):  # compute successful num_trials
+        pert_start, pert_end, reward_on = events['pert_on'].iloc[trial], events['pert_off'].iloc[trial], events['reward_on'].iloc[trial] # load marker unit s
         if pert_start != 0 and reward_on != 0 and pert_end-pert_start > 0.14 and pert_end-pert_start < 0.16:   # pert_start != 0 means there's perturbation, reward_on != 0 means this is a success pushing trial, perturbation length is 0.14s~0.16s randomly
+            trunc2 = popu_fr_onetrial(popu_id,pert_start-0.1,pert_start+0.2+0.0006,fr_bin)  #单位是s  perturbation为零点，截取-100ms到200ms
+            trunc_data_trials.append(trunc2)
             num_trials += 1
-    num_splits = 15  # 300列分割为15个块，每个20列
-    m, n = num_neurons, num_trials   # 每个分割块的形状
-    # initialize saving list
-    num = 1
-    #Evalues_list, Evectors_list = [], []
+
+    trunc_data_trials_npy = np.array(trunc_data_trials)
+    # compute SVD
+    token_size = 20  # 20（20ms）
+    num_splits = int(trunc_data_trials_npy[0].shape[1] / token_size)   # 300列分割为15个块，每个20列
+    m, n = num_neurons, token_size   # 每个分割块的形状  长度为token_size，宽度为neurons number
     U_all = np.zeros((num_trials, num_splits, m, n))  # full_matrices=False时U的形状
     S_all = np.zeros((num_trials, num_splits, n))     # 奇异值向量
     Vh_all = np.zeros((num_trials, num_splits, n, n)) # V的共轭转置
 
-    for i in np.arange(0,len(events['push_on'])-1):  # enumarate trials
-        pert_start, pert_end, reward_on = events['pert_on'].iloc[i], events['pert_off'].iloc[i], events['reward_on'].iloc[i] # load marker unit s
-        if pert_start != 0 and reward_on != 0 and pert_end-pert_start > 0.14 and pert_end-pert_start < 0.16:   # pert_start != 0 means there's perturbation, reward_on != 0 means this is a success pushing trial, perturbation length is 0.14s~0.16s randomly
-            # SVD analysis
-            trunc2 = popu_fr_onetrial(popu_id,pert_start-0.1,pert_start+0.2+0.0006,fr_bin)  #单位是s  perturbation为零点，截取-100ms到200ms
-            for j in range(num_splits):
-                # 分割块
-                start_col = j * 20
-                block = trunc2[:, start_col:start_col+20]
-                # 计算SVD，full_matrices=False减少存储空间
-                U, S, Vh = np.linalg.svd(block, full_matrices=False)
-                # 存储结果
-                U_all[i, j] = U
-                S_all[i, j] = S
-                Vh_all[i, j] = Vh
-
-            num += 1
+    for i in range(num_trials):
+        arr = trunc_data_trials_npy[i]
+        for j in range(num_splits):
+            # 分割块
+            start_col = j * token_size
+            block = arr[:, start_col:start_col + token_size]
+            # 计算SVD，full_matrices=False减少存储空间
+            U, S, Vh = np.linalg.svd(block, full_matrices=False)
+            # 存储结果
+            U_all[i, j] = U
+            S_all[i, j] = S
+            Vh_all[i, j] = Vh
 
     np.save(save_path + f"/{region}_U.npy", U_all)
     np.save(save_path + f"/{region}_S.npy", S_all)
